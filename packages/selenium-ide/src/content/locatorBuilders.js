@@ -282,6 +282,37 @@ LocatorBuilders.add('css:data-attr', function cssDataAttr(e) {
   return null
 })
 
+LocatorBuilders.add('css:nf-test-class', function linkText(e) {
+  const classNames = e.classList;
+
+  classNames.forEach( value => {
+    if (/^test__.*/.test(value)) return `css=*\.${value}`;
+  })
+
+  return null
+})
+
+LocatorBuilders.add('css:nf-component', function linkText(e) {
+  const tagName = e.tagName.toLowerCase();
+
+  if (/^nf-.*/.test(tagName))
+    return `css=*${tagName}`;
+
+  return null
+})
+
+LocatorBuilders.add('css:ng-attr', function cssDataAttr(e) {
+  const dataAttributes = ['ng-click', 'ng-model']
+  for (let i = 0; i < dataAttributes.length; i++) {
+    const attr = dataAttributes[i]
+    const value = e.getAttribute(attr)
+    if (attr) {
+      return `css=*[${attr}="${value}"]`
+    }
+  }
+  return null
+})
+
 LocatorBuilders.add('id', function id(e) {
   if (e.id) {
     return 'id=' + e.id
