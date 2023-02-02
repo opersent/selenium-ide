@@ -1,0 +1,26 @@
+{
+  "name": "@opersent/code-export-php-codeception",
+  "version": "1.0.0",
+  "description": "Export Selenium IDE v3 project contents to PHP Codeception",
+  "repository": "https://github.com/opersent/selenium-ide",
+  "keywords": [
+    "selenium",
+    "ide",
+    "export"
+  ],
+  "license": "Apache-2.0",
+  "private": false,
+  "scripts": {
+    "build": "babel -d dist src --ignore=__test__",
+    "watch": "yarn build -w"
+  },
+  "main": "dist/index.js",
+  "devDependencies": {
+    "@babel/cli": "^7.4.4",
+    "@babel/plugin-proposal-object-rest-spread": "^7.4.4",
+    "@babel/preset-env": "^7.4.5"
+  },
+  "dependencies": {
+    "@seleniumhq/side-utils": "^3.17.4"
+  }
+}
