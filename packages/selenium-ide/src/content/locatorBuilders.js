@@ -15,9 +15,9 @@
  */
 
 //import { MozillaBrowserBot } from "./selenium-browserbot";
-import { bot, core } from './closure-polyfill'
+import { bot } from './closure-polyfill'
 import { parse_locator } from './utils'
-import finder from '@medv/finder'
+// import finder from '@medv/finder'
 
 export default function LocatorBuilders(window) {
   this.window = window
@@ -44,6 +44,7 @@ LocatorBuilders.prototype.elementEquals = function(name, e, locator) {
 
 LocatorBuilders.prototype.build = function(e) {
   let locators = this.buildAll(e)
+
   if (locators.length > 0) {
     return locators[0][0]
   } else {
@@ -52,19 +53,21 @@ LocatorBuilders.prototype.build = function(e) {
 }
 
 LocatorBuilders.prototype.buildAll = function(el) {
-  let e = core.firefox.unwrap(el) //Samit: Fix: Do the magic to get it to work in Firefox 4
+  let e = el // core.firefox.unwrap(el) //Samit: Fix: Do the magic to get it to work in Firefox 4
   let locator
   let locators = []
   for (let i = 0; i < LocatorBuilders.order.length; i++) {
     let finderName = LocatorBuilders.order[i]
     try {
       locator = this.buildWith(finderName, e)
+
       if (locator) {
         locator = String(locator)
         //Samit: The following is a quickfix for above commented code to stop exceptions on almost every locator builder
         //TODO: the builderName should NOT be used as a strategy name, create a feature to allow locatorBuilders to specify this kind of behaviour
         //TODO: Useful if a builder wants to capture a different element like a parent. Use the this.elementEquals
         let fe = this.findElement(locator)
+
         if (e == fe) {
           locators.push([locator, finderName])
         }
@@ -90,6 +93,19 @@ LocatorBuilders.prototype.findElement = function(loc) {
   }
 }
 
+LocatorBuilders.prototype.findElements = function(loc) {
+  try {
+    const locator = parse_locator(loc, true)
+    return bot.locators.findElements(
+      { [locator.type]: locator.string },
+      this.window.document
+    )
+  } catch (error) {
+    //this.log.debug("findElement failed: " + error + ", locator=" + locator);
+    return null
+  }
+}
+
 /*
  * Class methods
  */
@@ -97,6 +113,13 @@ LocatorBuilders.prototype.findElement = function(loc) {
 LocatorBuilders.order = []
 LocatorBuilders.builderMap = {}
 LocatorBuilders._preferredOrder = []
+LocatorBuilders.strategies = {}
+LocatorBuilders.config = {
+  horizontalStrategyLimit: 3,
+  verticalStrategyLimit: 1,
+  singleStrategyLimit: 4,
+}
+
 // NOTE: for some reasons we does not use this part
 // classObservable(LocatorBuilders);
 
@@ -263,6 +286,103 @@ LocatorBuilders.prototype.preciseXPath = function(xpath, e) {
   return 'xpath=' + xpath
 }
 
+// LocatorBuilders.prototype.solutionFound = function(locator, element) {
+//   const elementsFound = this.findElements(locator)
+//
+//   return (
+//     elementsFound && elementsFound.length == 1 && elementsFound[0] == element
+//   )
+// }
+//
+// LocatorBuilders.prototype.tagName = function(element) {
+//   const tagName = element.tagName.toLowerCase()
+//   const [nfTagName] = tagName.match(/^nf-.*/)
+//
+//   return nfTagName || tagName
+// }
+//
+// LocatorBuilders.prototype.getAttributes = function(element) {
+//   // najwazniejsze ida pierwsze
+//   const nfAttributes = [
+//     'id',
+//     'ng-model',
+//     'ng-click',
+//     'name',
+//     'ng-value',
+//     'ng-show',
+//     'ng-hide',
+//     'ng-init',
+//     'ng-controller',
+//   ]
+//   const locators = []
+//
+//   for (let i = 0; i < nfAttributes.length; i++) {
+//     const attr = nfAttributes[i]
+//     const value = element.getAttribute(attr)
+//     if (value) locators.push(`[${attr}="${value}"]`)
+//   }
+//
+//   return locators.length ? locators : null
+// }
+//
+// LocatorBuilders.prototype.getTestAttributes = function(element) {
+//   // najwazniejsze ida pierwsze
+//   const testAttributes = ['data-test', 'data-test-id', 'data-test-value']
+//   const locators = []
+//
+//   for (let i = 0; i < testAttributes.length; i++) {
+//     const name = testAttributes[i]
+//     const value = element.getAttribute(name)
+//
+//     if (value) {
+//       const selector = `[${name}="${value}"]`
+//       if (this.solutionFound('css=' + selector, element))
+//         return 'css=' + selector
+//
+//       locators.push(selector)
+//     }
+//   }
+//
+//   return locators.length ? locators.join('') : null
+// }
+//
+// LocatorBuilders.prototype.getClasses = function(element) {
+//   const pattern = /(?:(?:^nf|^md|modal|panel|popup|button|input|select|option|menu|wrapper|container)[-_]?){2,}/i
+//   const matches = element.className.matchAll(pattern)
+//   const locators = [...new Set(matches)]
+//
+//   return locators.length ? locators : null
+// }
+//
+// LocatorBuilders.prototype.getTestClasses = function(element) {
+//   const testClasses = element.className.matchAll(/test__\w+/)
+//
+//   let locators = []
+//   for (let testClass in testClasses) {
+//     const selector = testClass
+//
+//     if (this.solutionFound('css=.' + selector, element)) return selector
+//
+//     locators.push('.' + selector)
+//   }
+//
+//   return locators.length ? locators : null
+// }
+//
+// LocatorBuilders.prototype.buildProfile = function(element) {
+//   const tagName = this.tagName(element)
+//   const attribute = this.getAttribute(element)
+//   const className = this.getClass(element)
+//   const combined = [tagName, className, attribute].filter(Boolean)
+//
+//   return {
+//     tagName,
+//     className,
+//     attribute,
+//     combined,
+//   }
+// }
+
 /*
  * ===== builders =====
  */
@@ -270,48 +390,83 @@ LocatorBuilders.prototype.preciseXPath = function(xpath, e) {
 // order listed dictates priority
 // e.g., 1st listed is top priority
 
-LocatorBuilders.add('css:data-attr', function cssDataAttr(e) {
-  const dataAttributes = ['data-test', 'data-test-id']
-  for (let i = 0; i < dataAttributes.length; i++) {
-    const attr = dataAttributes[i]
-    const value = e.getAttribute(attr)
-    if (attr) {
-      return `css=*[${attr}="${value}"]`
+LocatorBuilders.add('css:test-attr', function cssTestAttr(e) {
+  let testAttributes = ['data-test', 'data-test-id', 'data-test-value']
+
+  let locators = ''
+  for (let i = 0; i < testAttributes.length; i++) {
+    let attr = testAttributes[i]
+    let value = e.getAttribute(attr)
+    if (attr && value) {
+      locators += `[${attr}="${value}"]`
     }
   }
-  return null
+
+  return 'css=' + locators
 })
 
-LocatorBuilders.add('css:nf-test-class', function linkText(e) {
-  const classNames = e.classList;
+LocatorBuilders.add('css:nf-attr', function cssAttributes(e) {
+  let attributes = [
+    'id',
+    'ng-model',
+    'ng-click',
+    'name',
+    'ng-value',
+    'ng-show',
+    'ng-hide',
+    'ng-init',
+    'ng-controller',
+  ]
 
-  classNames.forEach( value => {
-    if (/^test__.*/.test(value)) return `css=*\.${value}`;
-  })
+  let locators = ''
+  for (let i = 0; i < attributes.length; i++) {
+    let attr = attributes[i]
+    let value = e.getAttribute(attr)
 
-  return null
-})
-
-LocatorBuilders.add('css:nf-component', function linkText(e) {
-  const tagName = e.tagName.toLowerCase();
-
-  if (/^nf-.*/.test(tagName))
-    return `css=*${tagName}`;
-
-  return null
-})
-
-LocatorBuilders.add('css:ng-attr', function cssDataAttr(e) {
-  const dataAttributes = ['ng-click', 'ng-model']
-  for (let i = 0; i < dataAttributes.length; i++) {
-    const attr = dataAttributes[i]
-    const value = e.getAttribute(attr)
-    if (attr) {
-      return `css=*[${attr}="${value}"]`
+    if (attr && value) {
+      locators += `[${attr}='${value}']`
     }
   }
-  return null
+
+  return 'css=' + locators
 })
+
+LocatorBuilders.add('css:nf-class', function cssClassNames(e) {
+  let pattern = /(?:(?:^nf|^md|modal|panel|popup|button|input|select|option|menu|wrapper|container)[-_]?){2,}/i
+
+  let locators = ''
+  for (let className in e.classList) {
+    if (pattern.test(className)) {
+      locators += '.' + className
+    }
+  }
+
+  return 'css=' + locators
+})
+
+LocatorBuilders.add('css:nf-tag', function cssTagName(e) {
+  let tagName = e.tagName.toLowerCase()
+  return /nf-\w+/.test(tagName)
+})
+
+// LocatorBuilders.add('css:simple', function cssFinder(e) {
+//   const nfTag = this.tagName(e)
+//   const [nfAttribute] = this.getAttributes(e)
+//   const [nfClass] = this.getClasses(e)
+//
+//   const locators = [nfTag, nfClass, nfAttribute].filter(Boolean).join('')
+//
+//   return locators.length ? 'css=' + locators.join('') : null
+// })
+
+// LocatorBuilders.add('css:simple+parent', function cssFinder(e) {
+//   const profile = this.buildProfile(e)
+//   const parentProfile = this.buildProfile(e.parentElement)
+//
+//   const locator = `css=${parentProfile.combined} ${profile.combined}`
+//
+//   return locator
+// })
 
 LocatorBuilders.add('id', function id(e) {
   if (e.id) {
@@ -325,7 +480,8 @@ LocatorBuilders.add('linkText', function linkText(e) {
     let text = e.textContent
     if (!text.match(/^\s*$/)) {
       return (
-        'linkText=' + text.replace(/\xA0/g, ' ').replace(/^\s*(.*?)\s*$/, '$1')
+        'linkText=' +
+        text.replace(/\xA0/g, ' ').replace(/^\s*(?:.*?)\s*$/, '$1')
       )
     }
   }
@@ -339,9 +495,9 @@ LocatorBuilders.add('name', function name(e) {
   return null
 })
 
-LocatorBuilders.add('css:finder', function cssFinder(e) {
-  return 'css=' + finder(e)
-})
+// LocatorBuilders.add('css:finder', function cssFinder(e) {
+//     return 'css=' + finder(e)
+// })
 
 LocatorBuilders.add('xpath:link', function xpathLink(e) {
   if (e.nodeName == 'A') {

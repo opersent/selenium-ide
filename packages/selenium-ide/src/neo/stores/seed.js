@@ -16,7 +16,7 @@
 // under the License.
 
 import generate from 'project-name-generator'
-import { CommandsArray } from '../models/Command'
+import { Commands } from '../models/Command'
 import Command from '../models/Command'
 import UiState from './view/UiState'
 
@@ -30,9 +30,7 @@ export default function seed(store, numberOfSuites = 0) {
   const targets = ['a', 'button']
   function generateCommand(test) {
     const command = test.createCommand()
-    command.setCommand(
-      CommandsArray[Math.floor(Math.random() * CommandsArray.length)]
-    )
+    command.setCommand(Commands[Math.floor(Math.random() * Commands.length)])
     let targetChance = Math.floor(Math.random() * 10)
     command.setTarget(
       targetChance < targets.length ? targets[targetChance] : ''

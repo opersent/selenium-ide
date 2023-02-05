@@ -23,7 +23,7 @@ import Pause from '../../components/ActionButtons/Pause'
 import Stop from '../../components/ActionButtons/Stop'
 import StepInto from '../../components/ActionButtons/StepInto'
 import SpeedGauge from '../../components/ActionButtons/SpeedGauge'
-import DisableBreakpoints from '../../components/ActionButtons/DisableBreakpoints'
+// import DisableBreakpoints from '../../components/ActionButtons/DisableBreakpoints'
 import PauseExceptions from '../../components/ActionButtons/PauseExceptions'
 import Record from '../../components/ActionButtons/Record'
 import GaugeMenu from '../GaugeMenu'
@@ -129,11 +129,6 @@ export default class ToolBar extends React.Component {
           value={PlaybackState.delay}
           maxDelay={PlaybackState.maxDelay}
           onChange={PlaybackState.setDelay}
-        />
-        <div className="flexer" />
-        <DisableBreakpoints
-          isActive={PlaybackState.breakpointsDisabled}
-          onClick={PlaybackState.toggleDisableBreakpoints}
         />
         <PauseExceptions
           isActive={PlaybackState.pauseOnExceptions}

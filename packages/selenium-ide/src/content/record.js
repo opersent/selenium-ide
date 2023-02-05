@@ -115,7 +115,17 @@ Recorder.addEventHandler(
       eventIsTrusted(event)
     ) {
       if (!this.recordingState.preventClickTwice) {
-        record('click', locatorBuilders.buildAll(event.target), '')
+        const locators = locatorBuilders.buildAll(event.target)
+
+        browser.runtime.sendMessage({
+          log: {
+            type: 'warn',
+            message: '[record.js] test message sent!',
+          },
+        })
+
+        record('click', locators, '')
+
         this.recordingState.preventClickTwice = true
       }
       setTimeout(() => {
@@ -527,6 +537,7 @@ Recorder.addEventHandler(
       if (clickable) {
         nodeInsertedLocator = event.target
         nodeInsertedAttrChange = locatorBuilders.buildAll(event.target)
+
         setTimeout(() => {
           nodeInsertedLocator = undefined
           nodeInsertedAttrChange = undefined
